@@ -94,6 +94,39 @@ def reproduce():
         w.close()
 
 
+def boundary():
+    # Cyclic regions where retraction must keep exactly what still has
+    # support: partial rederivation, self-loops, and cycle re-entry.
+    scenarios = [
+        # Cycle entered by a second, intact entry point.
+        ([("raw", "stage"), ("alt", "quality"), ("stage", "quality"),
+          ("quality", "stage"), ("quality", "mart")],
+         [("raw", "stage")]),
+        # Dropped region rederived through a surviving detour edge.
+        ([("s", "a"), ("a", "b"), ("b", "a"), ("s", "b")],
+         [("s", "a")]),
+        # Self-loop removed while a detour cycle keeps every relation.
+        ([("a", "a"), ("a", "b"), ("b", "a")],
+         [("a", "a")]),
+        # Chain feeding a cycle: entry removed, cycle and tail stay.
+        ([("in", "loop"), ("loop", "back"), ("back", "loop"),
+          ("loop", "out")],
+         [("in", "loop")]),
+    ]
+    for initial, remove in scenarios:
+        w = Warehouse()
+        try:
+            w.apply(initial)
+            edges = set(initial)
+            compare(w, edges)
+            w.apply(remove=remove)
+            edges.difference_update(remove)
+            compare(w, edges)
+        finally:
+            w.close()
+    print("BOUNDARY_OK: reentry, detour rederivation, self-loop, cycle tail")
+
+
 def randomized():
     rng = random.Random(61073)
     vertices = ["n" + str(i) for i in range(8)]
@@ -161,6 +194,7 @@ def demo():
 def verify():
     regression()
     reproduce()
+    boundary()
     randomized()
     locality()
     print("VERIFY_OK")
